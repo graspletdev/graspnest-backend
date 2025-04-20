@@ -1,7 +1,7 @@
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import { TokenResponse } from './tokenresponse.model';
-import { LoginResponse, RefreshTokenResponse } from 'src/model/loginresponse.model';
+import { LoginResponse, RefreshTokenResponse } from 'src/model/authresponse.model';
 
 class KeycloakService {
     private keycloakUrl: string;
@@ -22,8 +22,8 @@ class KeycloakService {
         this.password = process.env.KEYCLOAK_ADMIN_PASSWORD;
         this.realmName = process.env.KEYCLOAK_REALM;
         this.app_redirect_uri = process.env.APP_REDIRECT_URI;
-        console.log(this.clientId);
-        console.log(this.clientSecret);
+//         console.log(this.clientId);
+//         console.log(this.clientSecret);
     }
 
     public async getAdminToken(): Promise<TokenResponse> {
@@ -80,6 +80,77 @@ class KeycloakService {
             return userId;
         } catch (error) {
             console.error('Failed to register user', error);
+            throw error;
+        }
+    }
+
+    public async registerUserWithClientRole(user: {
+        username: string;
+//         password: string;
+        roles: string[];
+        firstName: string;
+        lastName: string;
+    }): Promise<string> {
+        try {
+            const tokenResponse = await this.getAdminToken();
+            const createUserResponse = await axios.post(
+                `${this.keycloakUrl}/admin/realms/${this.realmName}/users`,
+                {
+                    username: user.username,
+                    email: user.username,
+                    enabled: true,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+//                     credentials: [{ type: 'password', value: user.password, temporary: false }],
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${tokenResponse.access_token}`,
+                    },
+                }
+            );
+
+            const userId = createUserResponse.headers.location.split('/').pop();
+
+            const clients = await axios.get(`${this.keycloakUrl}/admin/realms/${this.realmName}/clients`, {
+                headers: {
+                    Authorization: `Bearer ${tokenResponse.access_token}`,
+                },
+            });
+
+            const client = clients.data.find((client: any) => client.clientId === this.clientId);
+
+            if (!client) {
+                throw new Error(`Client with ID ${this.clientId} not found`);
+            }
+
+            const rolesResponse = await axios.get(
+                `${this.keycloakUrl}/admin/realms/${this.realmName}/clients/${client.id}/roles`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${tokenResponse.access_token}`,
+                    },
+                }
+            );
+
+            const roleIds = rolesResponse.data.filter((role: any) => user.roles.includes(role.name));
+
+            // Assign roles to user
+            await axios.post(
+                `${this.keycloakUrl}/admin/realms/${this.realmName}/users/${userId}/role-mappings/clients/${client.id}`,
+                roleIds,
+                {
+                    headers: {
+                        Authorization: `Bearer ${tokenResponse.access_token}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            return userId;
+        } catch (error) {
+            console.error('Failed to register user with client role', error);
             throw error;
         }
     }
@@ -234,6 +305,34 @@ class KeycloakService {
             throw exception;
         }
     }
+
+    public async sendNewUserPasswordResetEmail(userId: string): Promise<boolean> {
+            try {
+                 var adminToken = await this.getAdminToken();
+                // Send password reset email
+                await axios.put(
+                    `${this.keycloakUrl}/admin/realms/${this.realmName}/users/${userId}/execute-actions-email`,
+                    ['UPDATE_PASSWORD'],
+                    {
+                        headers: {
+                            Authorization: `Bearer ${adminToken.access_token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        params: {
+                            redirect_uri: this.app_redirect_uri,
+                            client_id: this.clientId,
+                        },
+                    }
+                );
+
+                console.log(`Password reset email sent to ${userId}`);
+                return true;
+            } catch (exception: any) {
+                console.log(`failed to send password reset email, error: ${exception} `);
+                return false;
+                throw exception;
+            }
+        }
 
     public async resetPasswordAsync(userId: string, key: string, newPassword: string): Promise<boolean> {
         const tokenResponse = await this.getAdminToken();
