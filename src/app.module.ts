@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { OrgModule } from './org/org.module';
 import { CommunityModule } from './community/community.module';
+import { AdminModule } from './admin/admin.module';
 
 
 @Module({
@@ -39,7 +40,8 @@ import { CommunityModule } from './community/community.module';
         AuthModule,
         UserModule,
         OrgModule,
-        CommunityModule
+        CommunityModule,
+        AdminModule
     ],
     providers: []
 //         {

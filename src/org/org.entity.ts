@@ -50,6 +50,6 @@ export class Organization {
     })
     orgBankDetails: string;
 
-    //     @OneToMany(() => Community, (community) => community.organization)
-    //     communities: Community[];
+    //       @OneToMany(() => Community, c => c.organization)
+    //       communities: Community[];
 }
