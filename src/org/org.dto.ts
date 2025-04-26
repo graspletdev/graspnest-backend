@@ -85,3 +85,23 @@ export class UpdateOrgDto extends PartialType(CreateOrgDto) {}
 //  orgLicense?: string;
 //  orgBankDetails?: string;
 // }
+
+export interface CommDetailsDto {
+    orgId: number;
+    orgName: string;
+    commName: string;
+    commAdminFirstName: string;
+    commAdminLastName: string;
+    communitiesCount: number;
+    landlordsCount: number;
+    tenantsCount: number;
+}
+
+export interface OrgDashboardDto {
+    totals: {
+        communities: number;
+        landlords: number;
+        tenants: number;
+    };
+    orgCommDetails: CommDetailsDto[];
+}

@@ -3,13 +3,16 @@ import { Injectable, NotFoundException, ConflictException, InternalServerErrorEx
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Organization } from './org.entity';
-import { CreateOrgDto, UpdateOrgDto } from './org.dto';
+import { Community } from 'src/community/community.entity';
+import { CreateOrgDto, UpdateOrgDto, OrgDashboardDto, CommDetailsDto } from './org.dto';
 
 @Injectable()
 export class OrgService {
     constructor(
         @InjectRepository(Organization)
-        private readonly orgRepo: Repository<Organization>
+        private readonly orgRepo: Repository<Organization>,
+        @InjectRepository(Community)
+        private readonly commRepo: Repository<Community>
     ) {}
 
     async findAll(): Promise<Organization[]> {
@@ -54,6 +57,45 @@ export class OrgService {
             await this.orgRepo.remove(org);
         } catch (err) {
             throw new InternalServerErrorException('Could not delete organization');
+        }
+    }
+
+    async dashboard(orgAdminEmail: string): Promise<OrgDashboardDto> {
+        const org = await this.orgRepo.findOne({
+            select: ['id', 'orgName'],
+            where: { orgAdminEmail },
+        });
+        if (!org) {
+            throw new NotFoundException(`No organization found for admin: ${orgAdminEmail}`);
+        }
+        try {
+            const [communities, landlords, tenants] = await Promise.all([
+                this.commRepo.count({ where: { orgId: org.id } }),
+                0,
+                0,
+                //                 this.lordRepo.count(),
+                //                 this.tenantRepo.count(),
+            ]);
+
+            const comms = await this.commRepo.find({ where: { orgId: org.id } });
+            const orgCommDetails: CommDetailsDto[] = comms.map((o) => ({
+                orgId: org.id,
+                orgName: org.orgName,
+                commName: o.communityName,
+                commAdminFirstName: o.communityAdminFirstName,
+                commAdminLastName: o.communityAdminLastName,
+                communitiesCount: 2,
+                landlordsCount: 3,
+                tenantsCount: 4,
+            }));
+            return {
+                totals: { communities, landlords, tenants },
+                orgCommDetails,
+            };
+        } catch (error) {
+            console.log('Error fetching  Org dashboard data', error.stack || error);
+            // Hide internal details, give client a 500
+            throw new InternalServerErrorException('Unable to load Org dashboard data');
         }
     }
 }
