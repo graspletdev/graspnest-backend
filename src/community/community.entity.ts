@@ -6,6 +6,9 @@ export class Community {
     id: number;
 
     @Column()
+    orgId: number;
+
+    @Column()
     communityName: string;
 
     @Column()
