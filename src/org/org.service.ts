@@ -70,21 +70,24 @@ export class OrgService {
         }
         try {
             const [communities, landlords, tenants] = await Promise.all([
-                this.commRepo.count({ where: { orgId: org.id } }),
+                this.commRepo.count({ where: { organization: { id: org.id } } }),
                 0,
                 0,
                 //                 this.lordRepo.count(),
                 //                 this.tenantRepo.count(),
             ]);
 
-            const comms = await this.commRepo.find({ where: { orgId: org.id } });
+            const [comms, commsTotal] = await this.commRepo.findAndCount({
+                where: { organization: { id: org.id } },
+                relations: ['organization'],
+            });
             const orgCommDetails: CommDetailsDto[] = comms.map((o) => ({
                 orgId: org.id,
                 orgName: org.orgName,
                 commName: o.communityName,
                 commAdminFirstName: o.communityAdminFirstName,
                 commAdminLastName: o.communityAdminLastName,
-                communitiesCount: 2,
+                communitiesCount: commsTotal,
                 landlordsCount: 3,
                 tenantsCount: 4,
             }));

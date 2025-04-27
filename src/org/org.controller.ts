@@ -12,6 +12,17 @@ import { AuthGuard, RoleGuard, Roles, Public } from 'nest-keycloak-connect';
 export class OrgController {
     constructor(private readonly orgService: OrgService) {}
 
+    @Get('dashboard')
+    @UseGuards(AuthGuard)
+    @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
+    async dashboard(@Request() req): Promise<ApiResponse<OrgDashboardDto>> {
+        const orgAdminEmail = (req.user as any).email as string;
+        console.log('orgAdminEmail', orgAdminEmail);
+        const data = await this.orgService.dashboard(orgAdminEmail);
+        console.log('Org data', data);
+        return { result: true, message: 'Org Dashboard data fetched successfully', data };
+    }
+
     @UseGuards(AuthGuard)
     @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
     @Get()
@@ -55,19 +66,5 @@ export class OrgController {
     @SwaggerResponse({ status: 204, description: 'Delete an org' })
     async remove(@Param('name') name: string): Promise<void> {
         await this.orgService.remove(name);
-    }
-
-    @UseGuards(AuthGuard)
-    @Get('dashboard')
-    @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
-    async dashboard(@Request() req): Promise<ApiResponse<OrgDashboardDto>> {
-        const orgAdminEmail = (req.user as any).email as string;
-        const data = await this.orgService.dashboard(orgAdminEmail);
-
-        return {
-            result: true,
-            message: 'Org Dashboard data fetched successfully',
-            data,
-        };
     }
 }

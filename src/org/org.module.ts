@@ -4,11 +4,12 @@ import { OrgService } from './org.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Organization } from './org.entity';
 import { KeycloakModule } from 'src/keycloak/keycloak.module';
+import { Community } from 'src/community/community.entity';
 
 @Module({
     // added Global to keycloakmodule
     //imports: [TypeOrmModule.forFeature([Organization]),KeycloakModule],
-    imports: [TypeOrmModule.forFeature([Organization])],
+    imports: [TypeOrmModule.forFeature([Organization]), TypeOrmModule.forFeature([Community])],
     controllers: [OrgController],
     providers: [OrgService],
     exports: [OrgService],

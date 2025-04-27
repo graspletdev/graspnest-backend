@@ -1,4 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Community } from 'src/community/community.entity';
 
 @Entity()
 export class Organization {
@@ -50,6 +51,7 @@ export class Organization {
     })
     orgBankDetails: string;
 
-    //       @OneToMany(() => Community, c => c.organization)
-    //       communities: Community[];
+    // one Organization has many Community
+    @OneToMany(() => Community, (comm) => comm.organization)
+    communities: Community[];
 }
