@@ -1,12 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne } from 'typeorm';
+import { Organization } from 'src/org/org.entity';
 
 @Entity()
 export class Community {
     @PrimaryGeneratedColumn()
     id: number;
-
-    @Column()
-    orgId: number;
 
     @Column()
     communityName: string;
@@ -56,6 +54,6 @@ export class Community {
     })
     communityFeatures: string;
 
-    //     @OneToMany(() => Community, (community) => community.organization)
-    //     communities: Community[];
+    @ManyToOne(() => Organization, (org) => org.communities)
+    organization: Organization;
 }

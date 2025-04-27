@@ -91,3 +91,21 @@ export class UpdateCommDto extends PartialType(CreateCommDto) {}
 // communityAdminContact?: string;
 // communityFeatures?: string;
 // }
+
+export interface landlordDetailsDto {
+    commId: number;
+    commName: string;
+    landlordFirstName: string;
+    landlordLastName: string;
+    unitsCount: number;
+    landlordsCount: number;
+    tenantsCount: number;
+}
+
+export interface CommDashboardDto {
+    totals: {
+        landlords: number;
+        tenants: number;
+    };
+    commlandlordDetails: landlordDetailsDto[];
+}

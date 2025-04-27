@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ConflictException, InternalServerErrorEx
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Community } from './community.entity';
-import { CreateCommDto, UpdateCommDto } from './community.dto';
+import { CreateCommDto, UpdateCommDto, CommDashboardDto, landlordDetailsDto } from './community.dto';
 
 @Injectable()
 export class CommunityService {
@@ -54,6 +54,47 @@ export class CommunityService {
             await this.commRepo.remove(community);
         } catch (err) {
             throw new InternalServerErrorException('Could not delete community');
+        }
+    }
+
+    async dashboard(communityAdminEmail: string): Promise<CommDashboardDto> {
+        const comm = await this.commRepo.findOne({
+            select: ['id', 'communityName'],
+            where: { communityAdminEmail },
+        });
+        if (!comm) {
+            throw new NotFoundException(`No Community found for admin: ${communityAdminEmail}`);
+        }
+        try {
+            const [landlords, tenants] = await Promise.all([
+                0, 0,
+                //                 this.lordRepo.count(),
+                //                 this.tenantRepo.count(),
+            ]);
+
+            //             const [landlords, landlordsCount] = await this.lordRepo.findAndCount({
+            //               where: { organization: { id: org.id  } },
+            //               relations: ['organization'],
+            //             });
+            const commlandlordDetails: landlordDetailsDto[] = [
+                {
+                    commId: 1,
+                    commName: 'Test Community',
+                    landlordFirstName: 'landlordFirstName',
+                    landlordLastName: 'landlordFirstName',
+                    unitsCount: 4,
+                    landlordsCount: 2,
+                    tenantsCount: 2,
+                },
+            ];
+            return {
+                totals: { landlords, tenants },
+                commlandlordDetails,
+            };
+        } catch (error) {
+            console.log('Error fetching  Community dashboard data', error.stack || error);
+            // Hide internal details, give client a 500
+            throw new InternalServerErrorException('Unable to load Community dashboard data');
         }
     }
 }
