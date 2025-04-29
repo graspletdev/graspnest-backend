@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, HttpCode, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, HttpCode, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiResponse as SwaggerResponse } from '@nestjs/swagger';
 import { AuthGuard, RoleGuard, Roles, Public } from 'nest-keycloak-connect';
 import { CommunityService } from './community.service';
@@ -14,12 +14,14 @@ export class CommunityController {
     @Get('dashboard')
     @UseGuards(AuthGuard)
     @Roles({ roles: ['SuperAdmin', 'OrgAdmin', 'CommunityAdmin'] })
+    @Get('dashboard')
+    @UseGuards(AuthGuard)
+    @Roles({ roles: ['SuperAdmin', 'OrgAdmin', 'CommunityAdmin'] })
     async dashboard(@Request() req): Promise<ApiResponse<CommDashboardDto>> {
-        const communityAdminEmail = (req.user as any).email as string;
-        console.log('commAdminEmail', communityAdminEmail);
-        const data = await this.commService.dashboard(communityAdminEmail);
-        console.log('commdata,', data);
-        return { result: true, message: 'Community Dashboard data fetched successfully', data };
+        const user = req.user;
+        const data = await this.commService.getDashboardForUser(user);
+        //console.log('Community data', data);
+        return { result: true, message: 'Community dashboard data fetched successfully', data };
     }
 
     @Get()
@@ -28,7 +30,7 @@ export class CommunityController {
     @SwaggerResponse({ status: 200, description: 'List all Communities', type: Community, isArray: true })
     async findAll(): Promise<ApiResponse<Community[]>> {
         const data = await this.commService.findAll();
-        return { result: true, message: 'Fetched Communities', data };
+        return { result: true, message: 'Fetched communities', data };
     }
 
     @UseGuards(AuthGuard)

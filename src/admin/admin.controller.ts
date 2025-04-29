@@ -11,7 +11,7 @@ export class AdminController {
 
     @Get('dashboard')
     @Roles({ roles: ['SuperAdmin'] })
-//    @Public()
+    //    @Public()
     async dashboard(@Request() req): Promise<ApiResponse<DashboardDto>> {
         //console.log(req)
         const data = await this.adminService.getDashboard();

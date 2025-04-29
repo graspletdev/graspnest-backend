@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, HttpCode, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, HttpCode, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiResponse as SwaggerResponse } from '@nestjs/swagger';
 import { OrgService } from './org.service';
 import { CreateOrgDto, UpdateOrgDto, OrgDashboardDto } from './org.dto';
@@ -16,20 +16,46 @@ export class OrgController {
     @UseGuards(AuthGuard)
     @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
     async dashboard(@Request() req): Promise<ApiResponse<OrgDashboardDto>> {
-        const orgAdminEmail = (req.user as any).email as string;
-        console.log('orgAdminEmail', orgAdminEmail);
-        const data = await this.orgService.dashboard(orgAdminEmail);
-        console.log('Org data', data);
-        return { result: true, message: 'Org Dashboard data fetched successfully', data };
+        try {
+            const roles = (req.user?.resource_access?.GraspNestClient?.roles as string[]) || [];
+            const email = req.user?.email as string;
+
+            if (!roles.length) {
+                throw new Error('User roles not found in token.');
+            }
+
+            let data: OrgDashboardDto;
+
+            if (roles.includes('SuperAdmin')) {
+                data = await this.orgService.findAll();
+            } else if (roles.includes('OrgAdmin')) {
+                if (!email) {
+                    throw new Error('OrgAdmin email not found in token.');
+                }
+                data = await this.orgService.dashboard(email);
+            } else {
+                throw new Error('Unauthorized role.');
+            }
+
+            return { result: true, message: 'Dashboard data fetched successfully', data };
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error.message);
+            throw new BadRequestException(error.message || 'Failed to fetch dashboard data.');
+        }
     }
 
+    @Get()
     @UseGuards(AuthGuard)
     @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
-    @Get()
     @SwaggerResponse({ status: 200, description: 'List all organizations', type: Organization, isArray: true })
-    async findAll(): Promise<ApiResponse<Organization[]>> {
-        const data = await this.orgService.findAll();
-        return { result: true, message: 'Fetched organizations', data };
+    async findAll(): Promise<ApiResponse<OrgDashboardDto>> {
+        try {
+            const data = await this.orgService.findAll();
+            return { result: true, message: 'Fetched organizations', data };
+        } catch (error) {
+            console.error('Error fetching organizations:', error.message);
+            throw new BadRequestException('Failed to fetch organizations.');
+        }
     }
 
     @UseGuards(AuthGuard)

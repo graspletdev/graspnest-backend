@@ -3,7 +3,7 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { Organization } from 'src/org/org.entity';
 import { Community } from 'src/community/community.entity';
-// import { LandLord } from 'src/landlord/landlord.entity';
+import { Landlord } from 'src/landlord/landlord.entity';
 // import { Tenant } from 'src/tenant/tenant.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -14,7 +14,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     imports: [
         TypeOrmModule.forFeature([Organization]),
         TypeOrmModule.forFeature([Community]),
-        //             TypeOrmModule.forFeature([LandLord]),
+        TypeOrmModule.forFeature([Landlord]),
         //             TypeOrmModule.forFeature([Tenant]),
     ],
 })

@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne } from 'typeorm';
 import { Organization } from 'src/org/org.entity';
+import { Landlord } from 'src/landlord/landlord.entity';
 
 @Entity()
 export class Community {
@@ -56,4 +57,8 @@ export class Community {
 
     @ManyToOne(() => Organization, (org) => org.communities)
     organization: Organization;
+
+    // one Community has many Landlords
+    @OneToMany(() => Landlord, (landlord) => landlord.community)
+    landlords: Landlord[];
 }

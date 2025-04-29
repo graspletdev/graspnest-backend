@@ -12,6 +12,7 @@ import { UserModule } from './user/user.module';
 import { OrgModule } from './org/org.module';
 import { CommunityModule } from './community/community.module';
 import { AdminModule } from './admin/admin.module';
+import { LandlordModule } from './landlord/landlord.module';
 
 
 @Module({
@@ -41,7 +42,8 @@ import { AdminModule } from './admin/admin.module';
         UserModule,
         OrgModule,
         CommunityModule,
-        AdminModule
+        AdminModule,
+        LandlordModule
     ],
     providers: []
 //         {

@@ -1,6 +1,13 @@
-import { IsString, IsEmail, IsOptional, Length } from 'class-validator';
+import { IsString, IsEmail, IsOptional, Length, IsNumber } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PartialType } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { ValidateNested, IsNotEmpty } from 'class-validator';
+
+export class OrganizationSimpleDto {
+    @IsNotEmpty()
+    id: number;
+}
 
 export class CreateCommDto {
     @ApiProperty({ description: 'Unique Community name' })
@@ -15,12 +22,12 @@ export class CreateCommDto {
 
     @ApiPropertyOptional()
     @IsOptional()
-    @IsString()
+    @IsNumber()
     communityBlocks?: number;
 
     @ApiPropertyOptional()
     @IsOptional()
-    @IsString()
+    @IsNumber()
     communityUnitsinBlock?: number;
 
     @ApiPropertyOptional()
@@ -71,6 +78,10 @@ export class CreateCommDto {
     @IsOptional()
     @IsString()
     communityFeatures?: string;
+
+    @ValidateNested()
+    @Type(() => OrganizationSimpleDto)
+    organization: OrganizationSimpleDto;
 }
 
 export class UpdateCommDto extends PartialType(CreateCommDto) {}
@@ -98,6 +109,8 @@ export interface landlordDetailsDto {
     landlordFirstName: string;
     landlordLastName: string;
     unitsCount: number;
+    blocksCount: number;
+    blockName: string;
     landlordsCount: number;
     tenantsCount: number;
 }
@@ -106,6 +119,8 @@ export interface CommDashboardDto {
     totals: {
         landlords: number;
         tenants: number;
+        unitsCount: number;
+        blocksCount: number;
     };
     commlandlordDetails: landlordDetailsDto[];
 }
