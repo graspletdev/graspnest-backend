@@ -6,6 +6,7 @@ import { CreateCommDto, UpdateCommDto, CommDashboardDto, landlordDetailsDto } fr
 import { Landlord } from 'src/landlord/landlord.entity';
 import { Organization } from 'src/org/org.entity';
 import { In } from 'typeorm';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class CommunityService {
@@ -15,7 +16,8 @@ export class CommunityService {
         @InjectRepository(Community)
         private readonly commRepo: Repository<Community>,
         @InjectRepository(Landlord)
-        private readonly landlordRepo: Repository<Landlord>
+        private readonly landlordRepo: Repository<Landlord>,
+        private userService: UserService
     ) {}
 
     async findAll(): Promise<Community[]> {
@@ -103,10 +105,15 @@ export class CommunityService {
 
     async getDashboardByEmail(email: string): Promise<CommDashboardDto> {
         try {
+            const user = await this.userService.findOneByEmail(email);
+            if (!user) throw new NotFoundException(`No user for ${email}`);
+
             const org = await this.orgRepo.findOne({
-                select: ['id', 'orgName'],
-                where: { orgAdminEmail: email },
+              select: ['id', 'orgName'],
+              where: { orgUser: { id: user.id } },
+              relations: ['orgUser'],     // so TypeORM knows how to traverse the relation
             });
+
 
             let comm = null;
 

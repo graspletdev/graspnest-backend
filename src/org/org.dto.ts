@@ -16,59 +16,69 @@ export class CreateOrgDto {
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    orgAddress?: string;
+    address?: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    orgPostCode?: string;
+    city?: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    orgCity?: string;
+    state?: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    orgState?: string;
+    country?: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    orgCountry?: string;
+    regNum?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    vatID?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    website?: string;
 
     @ApiProperty({ description: 'Admin first name' })
     @IsString()
     @Length(1, 30)
-    orgAdminFirstName: string;
+    adminFirst: string;
 
     @ApiProperty({ description: 'Admin last name' })
     @IsString()
     @Length(1, 30)
-    orgAdminLastName: string;
+    adminLast: string;
 
     @ApiProperty({ description: 'Admin email address' })
     @IsEmail()
-    orgAdminEmail: string;
+    adminEmail: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    orgAdminContact?: string;
+    adminContact?: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    orgLicense?: string;
+    logo?: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    orgBankDetails?: string;
+    docUpload?: string;
 }
 
-export class UpdateOrgDto extends PartialType(CreateOrgDto) {}
+export class UpdateOrgDto extends CreateOrgDto {}
 
 // export interface UpdateOrgDto {
 //  orgName?: string,
@@ -105,3 +115,5 @@ export interface OrgDashboardDto {
     };
     orgCommDetails: CommDetailsDto[];
 }
+
+export interface OrgWithUserDto extends CreateOrgDto {}

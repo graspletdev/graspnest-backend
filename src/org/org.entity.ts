@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, JoinColumn, OneToOne } from 'typeorm';
+import { User } from 'src/user/user.entity';
 import { Community } from 'src/community/community.entity';
 
 @Entity()
@@ -16,40 +17,38 @@ export class Organization {
         type: 'varchar',
         length: 255,
     })
-    orgAddress: string;
+    address: string;
 
     @Column()
-    orgPostCode: string;
+    city: string;
 
     @Column()
-    orgCity: string;
+    state: string;
 
     @Column()
-    orgState: string;
+    country: string;
 
     @Column()
-    orgCountry: string;
+    regNum: string;
 
     @Column()
-    orgAdminFirstName: string;
+    vatID: string;
 
     @Column()
-    orgAdminLastName: string;
+    website: string;
 
-    @Column()
-    orgAdminEmail: string;
+    @Column({ nullable: true })
+    logo: string;
 
-    @Column()
-    orgAdminContact: string;
+    @Column({ nullable: true })
+    docUpload: string;
 
-    @Column()
-    orgLicense: string;
+    @Column({ default: true })
+    active: boolean;
 
-    @Column({
-        type: 'varchar',
-        length: 255,
-    })
-    orgBankDetails: string;
+    @OneToOne(() => User, (u) => u.organization, { cascade: true })
+    @JoinColumn({ name: 'org_user_id' })
+    orgUser: User;
 
     // one Organization has many Community
     @OneToMany(() => Community, (comm) => comm.organization)

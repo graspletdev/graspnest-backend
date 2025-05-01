@@ -2,6 +2,7 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { User } from 'src/user/user.entity';
 import { Organization } from 'src/org/org.entity';
 import { Community } from 'src/community/community.entity';
 import { Landlord } from 'src/landlord/landlord.entity';
@@ -11,6 +12,8 @@ import { DashboardDto, OrgDetailsDto } from './admin.dto';
 @Injectable()
 export class AdminService {
     constructor(
+        @InjectRepository(User)
+        private readonly userRepo: Repository<User>,
         @InjectRepository(Organization)
         private readonly orgRepo: Repository<Organization>,
         @InjectRepository(Community)
@@ -61,25 +64,30 @@ export class AdminService {
             //                     tenantsCount: 0, // Add tenants counting later
             //                 });
             //             }
+            // in your OrgService (or wherever you need this)
             const rawData = await this.orgRepo
                 .createQueryBuilder('org')
+                // join the one-to-one User relation
+                .leftJoin('org.orgUser', 'admin')
+                // join communities & landlords
                 .leftJoin('org.communities', 'comm')
                 .leftJoin('comm.landlords', 'landlord')
+                .where('org.active = :active', { active: true })
                 .select('org.id', 'orgId')
                 .addSelect('org.orgName', 'orgName')
-                .addSelect('org.orgAdminFirstName', 'orgAdminFirstName')
-                .addSelect('org.orgAdminLastName', 'orgAdminLastName')
+                // now select the admin’s fields from the user table
+                .addSelect('admin.firstName', 'orgAdminFirstName')
+                .addSelect('admin.lastName', 'orgAdminLastName')
                 .addSelect('COUNT(DISTINCT comm.id)', 'communitiesCount')
                 .addSelect('COUNT(DISTINCT landlord.id)', 'landlordsCount')
-                // .leftJoin('comm.tenants', 'tenant') // later if needed
-                // .addSelect('COUNT(DISTINCT tenant.id)', 'tenantsCount')
                 .groupBy('org.id')
                 .addGroupBy('org.orgName')
-                .addGroupBy('org.orgAdminFirstName')
-                .addGroupBy('org.orgAdminLastName')
+                // and group by your joined fields
+                .addGroupBy('admin.firstName')
+                .addGroupBy('admin.lastName')
                 .getRawMany();
 
-            // Format raw result into OrgDetailsDto[]
+            // map to your DTO
             const adminOrgDetails: OrgDetailsDto[] = rawData.map((row) => ({
                 orgId: row.orgId,
                 orgName: row.orgName,
@@ -87,8 +95,9 @@ export class AdminService {
                 orgAdminLastName: row.orgAdminLastName,
                 communitiesCount: Number(row.communitiesCount),
                 landlordsCount: Number(row.landlordsCount),
-                tenantsCount: 0,
+                tenantsCount: 0, // populate if/when you join tenants
             }));
+
             // fetch per‑Org breakdown in one shot
             //             const orgs = await this.orgRepo
             //                 .createQueryBuilder('org')

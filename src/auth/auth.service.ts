@@ -23,10 +23,11 @@ export class AuthService {
             var userToCreate = new User();
             userToCreate.email = user.username;
             userToCreate.username = user.username;
-//             userToCreate.password = user.password;
+            //             userToCreate.password = user.password;
             userToCreate.firstName = user.firstName;
             userToCreate.lastName = user.lastName;
             userToCreate.role = user.role;
+            userToCreate.contact = user.contact;
             const existingUser = await this.userService.findOneByUsername(userToCreate.username);
             if (existingUser) {
                 //throw new BadRequestException('User already exists');
@@ -35,23 +36,22 @@ export class AuthService {
                     message: 'User already exists',
                 };
             }
-//             const hashedPassword = await bcrypt.hash(userToCreate.password, 10);
-//             userToCreate.password = hashedPassword;
+            //             const hashedPassword = await bcrypt.hash(userToCreate.password, 10);
+            //             userToCreate.password = hashedPassword;
             await this.userService.createUser(userToCreate);
             const userId = await this.keycloakService.registerUserWithClientRole({
                 username: userToCreate.username,
-//                 password: user.password,
+                //                 password: user.password,
                 roles: [userToCreate.role],
                 firstName: userToCreate.firstName,
-                lastName: userToCreate.lastName
+                lastName: userToCreate.lastName,
             });
             console.log('userid', userId);
             try {
                 var setPasswordEmailResponse = await this.keycloakService.sendNewUserPasswordResetEmail(userId);
                 if (setPasswordEmailResponse == true) {
                     return {
-                        message:
-                            'Registration complete!.<br>Please check your email and verify your address to activate your account and set your Password.',
+                        message: 'Registration complete!.<br>Please check your email and verify your address to activate your account and set your Password.',
                         data: {
                             userId: userToCreate.username,
                             status: UserStatus.PENDING,
@@ -123,8 +123,7 @@ export class AuthService {
             return {
                 result: true,
                 data: true,
-                message:
-                    'Password reset request successful.<br>Check your email for instructions to reset your password.',
+                message: 'Password reset request successful.<br>Check your email for instructions to reset your password.',
             };
         } else {
             //throw new BadRequestException('Error sending password reset email');

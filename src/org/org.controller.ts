@@ -1,7 +1,21 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, HttpCode, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Put,
+    Delete,
+    Param,
+    Body,
+    HttpCode,
+    UseGuards,
+    Request,
+    BadRequestException,
+    ParseIntPipe,
+    NotFoundException,
+} from '@nestjs/common';
 import { ApiTags, ApiResponse as SwaggerResponse } from '@nestjs/swagger';
 import { OrgService } from './org.service';
-import { CreateOrgDto, UpdateOrgDto, OrgDashboardDto } from './org.dto';
+import { CreateOrgDto, UpdateOrgDto, OrgDashboardDto, OrgWithUserDto } from './org.dto';
 import { Organization } from './org.entity';
 import { ApiResponse } from 'src/model/apiresponse.model';
 import { AuthGuard, RoleGuard, Roles, Public } from 'nest-keycloak-connect';
@@ -57,40 +71,47 @@ export class OrgController {
             throw new BadRequestException('Failed to fetch organizations.');
         }
     }
-
-    @UseGuards(AuthGuard)
-    @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
-    @Get(':name')
-    @SwaggerResponse({ status: 200, description: 'Get org by name', type: Organization })
-    async findOne(@Param('name') name: string): Promise<ApiResponse<Organization>> {
-        const data = await this.orgService.findOne(name);
-        return { result: true, message: `Fetched organization "${name}"`, data };
-    }
-
     @UseGuards(AuthGuard)
     @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
     @Post()
     @SwaggerResponse({ status: 201, description: 'Create a new org', type: Organization })
     async create(@Body() dto: CreateOrgDto): Promise<ApiResponse<Organization>> {
+        console.log('Create Org DTO', dto);
         const data = await this.orgService.create(dto);
         return { result: true, message: 'Organization created', data };
     }
 
     @UseGuards(AuthGuard)
     @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
-    @Put(':name')
-    @SwaggerResponse({ status: 200, description: 'Update existing org', type: Organization })
-    async update(@Param('name') name: string, @Body() dto: UpdateOrgDto): Promise<ApiResponse<Organization>> {
-        const data = await this.orgService.update(name, dto);
-        return { result: true, message: `Organization "${name}" updated`, data };
+    @Get(':id')
+    async findOne(@Param('id') id: string): Promise<ApiResponse<OrgWithUserDto>> {
+        const data = await this.orgService.findOne(id);
+        console.log('Get Org', data);
+        if (!data) {
+            throw new NotFoundException(`Organization with ID ${id} not found`);
+        }
+        return { result: true, message: `Fetched organization "${data.orgName}"`, data };
     }
 
     @UseGuards(AuthGuard)
     @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
-    @Delete(':name')
-    @HttpCode(204)
-    @SwaggerResponse({ status: 204, description: 'Delete an org' })
-    async remove(@Param('name') name: string): Promise<void> {
-        await this.orgService.remove(name);
+    @Put(':id')
+    async update(@Param('id') id: string, @Body() dto: UpdateOrgDto): Promise<ApiResponse<OrgWithUserDto>> {
+        console.log('From Update Org ', id);
+        const data = await this.orgService.update(id, dto);
+        console.log('Update Org ', data);
+        if (!data) {
+            throw new NotFoundException(`Organization with ID ${id} not found`);
+        }
+        return { result: true, message: `Organization "${data.orgName}" updated`, data };
     }
+    //
+    //     @UseGuards(AuthGuard)
+    //     @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
+    //     @Delete(':name')
+    //     @HttpCode(204)
+    //     @SwaggerResponse({ status: 204, description: 'Delete an org' })
+    //     async remove(@Param('name') name: string): Promise<void> {
+    //         await this.orgService.remove(name);
+    //     }
 }

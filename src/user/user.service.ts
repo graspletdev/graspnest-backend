@@ -26,12 +26,16 @@ export class UserService {
         return await this.usersRepository.findOne({ where: { username } });
     }
 
+    async findOneByEmail(email: string): Promise<User> {
+        return await this.usersRepository.findOne({ where: { email: email } });
+    }
+
     async createUser(user: User): Promise<User> {
         return await this.usersRepository.save(user);
     }
 
-//     async updateUserPassword(username: string, password: string): Promise<User> {
-//         await this.usersRepository.update({ username }, { password });
-//         return await this.usersRepository.findOne({ where: { username } });
-//     }
+    //     async updateUserPassword(username: string, password: string): Promise<User> {
+    //         await this.usersRepository.update({ username }, { password });
+    //         return await this.usersRepository.findOne({ where: { username } });
+    //     }
 }

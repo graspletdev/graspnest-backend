@@ -1,7 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
-import { CreateUserDto, LoginDto, ForgotPasswordDto, AuthRefreshTokenDto  } from './auth.dto';
+import { CreateUserDto, LoginDto, ForgotPasswordDto, AuthRefreshTokenDto } from './auth.dto';
 import { ApiResponse } from 'src/model/apiresponse.model';
 import { RegisterResponse, LoginResponse } from 'src/model/authresponse.model';
 import { Public, Unprotected } from 'nest-keycloak-connect';

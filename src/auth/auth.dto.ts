@@ -6,9 +6,9 @@ export class CreateUserDto {
     @IsEmail()
     username: string;
 
-//     @ApiProperty()
-//     @IsNotEmpty()
-//     password: string;
+    //     @ApiProperty()
+    //     @IsNotEmpty()
+    //     password: string;
 
     @ApiProperty()
     @IsNotEmpty()
@@ -17,6 +17,9 @@ export class CreateUserDto {
     @ApiProperty()
     @IsNotEmpty()
     lastName: string;
+
+    @ApiProperty()
+    contact: string;
 
     @ApiProperty()
     @IsNotEmpty()

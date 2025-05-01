@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToOne } from 'typeorm';
+import { Organization } from 'src/org/org.entity';
 
 @Entity()
 export class User {
@@ -20,6 +21,12 @@ export class User {
     @Column()
     role: string;
 
+    @Column({ nullable: true })
+    contact: string;
+
     @CreateDateColumn({ type: 'timestamp' })
     createdAt: Date;
+
+    @OneToOne(() => Organization, (org) => org.orgUser)
+    organization: Organization;
 }
