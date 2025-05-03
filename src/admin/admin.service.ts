@@ -28,7 +28,7 @@ export class AdminService {
         try {
             // fetch global totals
             const [organizations, communities, landlords, tenants] = await Promise.all([
-                this.orgRepo.count(),
+                this.orgRepo.count({ where: { active: true } }),
                 this.commRepo.count(),
                 this.landlordRepo.count(),
                 0,
@@ -68,7 +68,7 @@ export class AdminService {
             const rawData = await this.orgRepo
                 .createQueryBuilder('org')
                 // join the one-to-one User relation
-                .leftJoin('org.orgUser', 'admin')
+                .leftJoin('org.orgUsers', 'admin')
                 // join communities & landlords
                 .leftJoin('org.communities', 'comm')
                 .leftJoin('comm.landlords', 'landlord')

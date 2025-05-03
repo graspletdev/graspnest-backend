@@ -58,23 +58,9 @@ export class OrgController {
         }
     }
 
-    @Get()
-    @UseGuards(AuthGuard)
-    @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
-    @SwaggerResponse({ status: 200, description: 'List all organizations', type: Organization, isArray: true })
-    async findAll(): Promise<ApiResponse<OrgDashboardDto>> {
-        try {
-            const data = await this.orgService.findAll();
-            return { result: true, message: 'Fetched organizations', data };
-        } catch (error) {
-            console.error('Error fetching organizations:', error.message);
-            throw new BadRequestException('Failed to fetch organizations.');
-        }
-    }
     @UseGuards(AuthGuard)
     @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
     @Post()
-    @SwaggerResponse({ status: 201, description: 'Create a new org', type: Organization })
     async create(@Body() dto: CreateOrgDto): Promise<ApiResponse<Organization>> {
         console.log('Create Org DTO', dto);
         const data = await this.orgService.create(dto);
@@ -84,12 +70,10 @@ export class OrgController {
     @UseGuards(AuthGuard)
     @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
     @Get(':id')
-    async findOne(@Param('id') id: string): Promise<ApiResponse<OrgWithUserDto>> {
-        const data = await this.orgService.findOne(id);
+    async findOne(@Param('id') id: string, @Request() req): Promise<ApiResponse<OrgWithUserDto>> {
+        const email = req.user?.email as string;
+        const data = await this.orgService.findOne(id, email);
         console.log('Get Org', data);
-        if (!data) {
-            throw new NotFoundException(`Organization with ID ${id} not found`);
-        }
         return { result: true, message: `Fetched organization "${data.orgName}"`, data };
     }
 
@@ -100,18 +84,19 @@ export class OrgController {
         console.log('From Update Org ', id);
         const data = await this.orgService.update(id, dto);
         console.log('Update Org ', data);
-        if (!data) {
-            throw new NotFoundException(`Organization with ID ${id} not found`);
-        }
         return { result: true, message: `Organization "${data.orgName}" updated`, data };
     }
-    //
-    //     @UseGuards(AuthGuard)
-    //     @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
-    //     @Delete(':name')
-    //     @HttpCode(204)
-    //     @SwaggerResponse({ status: 204, description: 'Delete an org' })
-    //     async remove(@Param('name') name: string): Promise<void> {
-    //         await this.orgService.remove(name);
-    //     }
+
+    @UseGuards(AuthGuard)
+    @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
+    @Delete(':id')
+    async remove(@Param('id') id: string): Promise<ApiResponse<null>> {
+        console.log('in delete controller');
+        await this.orgService.remove(id);
+        return {
+            result: true,
+            data: null,
+            message: 'Organization deleted successfully',
+        };
+    }
 }

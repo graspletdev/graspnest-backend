@@ -6,7 +6,7 @@ import { ValidateNested, IsNotEmpty } from 'class-validator';
 
 export class OrganizationSimpleDto {
     @IsNotEmpty()
-    id: number;
+    id: string;
 }
 
 export class CreateCommDto {
@@ -104,7 +104,7 @@ export class UpdateCommDto extends PartialType(CreateCommDto) {}
 // }
 
 export interface landlordDetailsDto {
-    commId: number;
+    commId: string;
     commName: string;
     landlordFirstName: string;
     landlordLastName: string;

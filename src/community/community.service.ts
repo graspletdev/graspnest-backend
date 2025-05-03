@@ -110,7 +110,7 @@ export class CommunityService {
 
             const org = await this.orgRepo.findOne({
               select: ['id', 'orgName'],
-              where: { orgUser: { id: user.id } },
+              where: { orgUsers: { id: user.id } },
               relations: ['orgUser'],     // so TypeORM knows how to traverse the relation
             });
 
@@ -137,7 +137,7 @@ export class CommunityService {
         }
     }
 
-    private async getTotalCounts(orgId?: number, commId?: number): Promise<CommDashboardDto['totals']> {
+    private async getTotalCounts(orgId?: string, commId?: string): Promise<CommDashboardDto['totals']> {
         try {
             let whereClause = {};
 
@@ -217,7 +217,7 @@ export class CommunityService {
         }
 
         // Group landlords by communityId
-        const landlordsByCommunity = new Map<number, Landlord[]>();
+        const landlordsByCommunity = new Map<string, Landlord[]>();
 
         landlords.forEach((landlord) => {
             const commId = landlord.community.id;

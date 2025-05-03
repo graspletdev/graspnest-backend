@@ -4,8 +4,8 @@ import { Landlord } from 'src/landlord/landlord.entity';
 
 @Entity()
 export class Community {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn("uuid")
+    id: string;
 
     @Column()
     communityName: string;

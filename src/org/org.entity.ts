@@ -4,8 +4,8 @@ import { Community } from 'src/community/community.entity';
 
 @Entity()
 export class Organization {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
     @Column()
     orgName: string;
@@ -46,9 +46,8 @@ export class Organization {
     @Column({ default: true })
     active: boolean;
 
-    @OneToOne(() => User, (u) => u.organization, { cascade: true })
-    @JoinColumn({ name: 'org_user_id' })
-    orgUser: User;
+    @OneToMany(() => User, (user) => user.organization, { cascade: true })
+    orgUsers: User[];
 
     // one Organization has many Community
     @OneToMany(() => Community, (comm) => comm.organization)

@@ -1,7 +1,7 @@
 // src/org/org.service.ts
-import { Injectable, NotFoundException, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, InternalServerErrorException, HttpException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Connection } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Organization } from './org.entity';
 import { Community } from 'src/community/community.entity';
 import { Landlord } from 'src/landlord/landlord.entity';
@@ -26,7 +26,7 @@ export class OrgService {
         private readonly userRepo: Repository<User>,
         private readonly userService: UserService,
         private readonly authService: AuthService,
-        private readonly connection: Connection
+        private readonly dataSource: DataSource
     ) {}
 
     async findAll(): Promise<OrgDashboardDto> {
@@ -46,19 +46,22 @@ export class OrgService {
         }
     }
 
-    async findOne(orgId: string): Promise<OrgWithUserDto> {
+    async findOne(orgId: string, email: string): Promise<OrgWithUserDto> {
         const org = await this.orgRepo
             .createQueryBuilder('org')
-            .leftJoinAndSelect('org.orgUser', 'user')
-            .where('org.id = :id', { id: Number(orgId) })
+            .leftJoinAndSelect('org.orgUsers', 'user')
+            .where('org.id = :id', { id: orgId })
             .andWhere('org.active = true')
             .getOne();
         console.log('Org FindOne', org);
         if (!org) {
+            console.error(`Organization "${orgId}" not found`);
             throw new NotFoundException(`Organization "${orgId}" not found`);
         }
 
         // Map the entity + its related user straight into your DTO
+        // Org has only one user with role OrgAdmin
+        const adminUser = org.orgUsers.find((u) => u.role === 'OrgAdmin');
         const dto: OrgWithUserDto = {
             orgName: org.orgName,
             orgType: org.orgType,
@@ -71,111 +74,151 @@ export class OrgService {
             website: org.website,
             logo: org.logo,
             docUpload: org.docUpload,
-            adminFirst: org.orgUser.firstName,
-            adminLast: org.orgUser.lastName,
-            adminEmail: org.orgUser.email,
-            adminContact: org.orgUser.contact,
+            adminFirst: adminUser.firstName,
+            adminLast: adminUser.lastName,
+            adminEmail: adminUser.email,
+            adminContact: adminUser.contact,
         };
 
         return dto;
     }
 
     async create(dto: CreateOrgDto): Promise<Organization> {
-        const { orgName, adminEmail, adminFirst, adminLast, adminContact, ...orgFields } = dto;
-
-        if (await this.orgRepo.findOne({ where: { orgName, active: true } })) {
-            throw new ConflictException(`Organization "${orgName}" already exists`);
-        }
-
-        const userReg = await this.authService.register({
-            username: adminEmail,
-            //email: adminEmail,
-            firstName: adminFirst,
-            lastName: adminLast,
-            contact: adminContact,
-            role: 'OrgAdmin',
-        });
-
-        if (!userReg.result) {
-            throw new InternalServerErrorException(userReg.message || 'Failed to register organization admin user');
-        }
-        console.log('Registered User ID', userReg.data.userId);
-        const newUserId = userReg.data.userId;
-        if (!newUserId) {
-            throw new InternalServerErrorException('Registration succeeded but no user ID was returned');
-        }
-
-        const adminUser = await this.userRepo.findOne({
-            where: { username: newUserId },
-        });
-        if (!adminUser) {
-            throw new InternalServerErrorException('Admin user was created in Keycloak but not found in local database');
-        }
-
         try {
+            const { orgName, adminEmail, adminFirst, adminLast, adminContact, ...orgFields } = dto;
+
+            if (await this.orgRepo.findOne({ where: { orgName, active: true } })) {
+                console.error(`Organization "${orgName}" already exists`);
+                throw new ConflictException(`Organization "${orgName}" already exists`);
+            }
+
+            const userReg = await this.authService.register({
+                username: adminEmail,
+                //email: adminEmail,
+                firstName: adminFirst,
+                lastName: adminLast,
+                contact: adminContact,
+                role: 'OrgAdmin',
+            });
+
+            if (!userReg.result) {
+                console.error('Failed to register organization admin user');
+                throw new InternalServerErrorException(userReg.message || 'Failed to register organization admin user');
+            }
+            //prints the user email and assigned to newUserName
+            // username is returned from auth Service
+            console.log('Registered User ID', userReg.data.userId);
+            const newUserName = userReg.data.userId;
+            if (!newUserName) {
+                console.error(`Registration succeeded but no user ID was returned ${newUserName}`);
+                throw new InternalServerErrorException('Registration succeeded but no user ID was returned');
+            }
+
+            const adminUser = await this.userRepo.findOne({
+                where: { username: newUserName },
+            });
+            if (!adminUser) {
+                console.error('Admin user was created in Keycloak but not found in local database');
+                throw new InternalServerErrorException('Admin user was created in Keycloak but not found in local database');
+            }
+
             const org = this.orgRepo.create({
                 ...orgFields,
                 orgName,
                 active: true,
-                orgUser: adminUser,
+                orgUsers: [adminUser],
             });
             return await this.orgRepo.save(org);
         } catch (err: any) {
+            if (err instanceof HttpException) {
+                throw err;
+            }
             console.error('Failed to save organization', err);
             throw new InternalServerErrorException('Could not create organization record');
         }
     }
 
     async update(orgId: string, dto: UpdateOrgDto): Promise<OrgWithUserDto> {
-        const org = await this.orgRepo.findOne({ where: { id: Number(orgId), active: true }, relations: ['orgUser'] });
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
 
-        if (!org) throw new NotFoundException(`Org ${orgId} not found`);
+        try {
+            const orgRepo = queryRunner.manager.getRepository(Organization);
+            const userRepo = queryRunner.manager.getRepository(User);
 
-        const { adminFirst, adminLast, adminEmail, adminContact, ...orgFields } = dto;
+            const org = await orgRepo.findOne({
+                where: { id: orgId, active: true },
+                relations: ['orgUsers'],
+            });
 
-        await this.orgRepo.update(orgId, orgFields);
+            if (!org) {
+                throw new NotFoundException(`Organization with ID "${orgId}" not found`);
+            }
 
-        //  Update the user row
-        console.log('org', org);
-        await this.userRepo.update(org.orgUser.id, {
-            firstName: adminFirst,
-            lastName: adminLast,
-            email: adminEmail,
-            contact: adminContact,
-        });
+            const { adminFirst, adminLast, adminEmail, adminContact, ...orgFields } = dto;
+            // get the user of the Email in org row
+            const currentUser = org.orgUsers.find((u) => u.email === adminEmail);
+            if (!currentUser) {
+                throw new NotFoundException(`Admin user with email "${adminEmail}" not found in organization`);
+            }
 
-        const updated = await this.orgRepo.findOne({
-            where: { id: Number(orgId), active: true },
-            relations: ['orgUser'],
-        });
-        return {
-            orgName: updated.orgName,
-            orgType: updated.orgType,
-            address: updated.address,
-            city: updated.city,
-            state: updated.state,
-            country: updated.country,
-            regNum: updated.regNum,
-            vatID: updated.vatID,
-            website: updated.website,
-            logo: updated.logo,
-            docUpload: updated.docUpload,
-            adminFirst: updated.orgUser.firstName,
-            adminLast: updated.orgUser.lastName,
-            adminEmail: updated.orgUser.email,
-            adminContact: updated.orgUser.contact,
-        };
+            // Update organization fields
+            await orgRepo.update(orgId, orgFields);
+
+            // Update admin user fields
+            await userRepo.update(currentUser.id, {
+                firstName: adminFirst,
+                lastName: adminLast,
+                contact: adminContact,
+            });
+
+            await queryRunner.commitTransaction();
+
+            const updatedOrg = await this.orgRepo.findOne({
+                where: { id: orgId, active: true },
+                relations: ['orgUsers'],
+            });
+
+            const updatedUser = updatedOrg.orgUsers.find((u) => u.id === currentUser.id);
+
+            return {
+                orgName: updatedOrg.orgName,
+                orgType: updatedOrg.orgType,
+                address: updatedOrg.address,
+                city: updatedOrg.city,
+                state: updatedOrg.state,
+                country: updatedOrg.country,
+                regNum: updatedOrg.regNum,
+                vatID: updatedOrg.vatID,
+                website: updatedOrg.website,
+                logo: updatedOrg.logo,
+                docUpload: updatedOrg.docUpload,
+                adminFirst: updatedUser.firstName,
+                adminLast: updatedUser.lastName,
+                adminEmail: updatedUser.email,
+                adminContact: updatedUser.contact,
+            };
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            console.error('Failed to update organization and user:', error);
+            throw new InternalServerErrorException('Update operation failed');
+        } finally {
+            await queryRunner.release();
+        }
     }
 
-    //
-    //     async remove(orgName: string): Promise<void> {
-    //         const org = await this.findOne(orgName);
-    //         try {
-    //             await this.orgRepo.remove(org);
-    //         } catch (err) {
-    //             throw new InternalServerErrorException('Could not delete organization');
-    //         }
-    //     }
+    async remove(orgId: string): Promise<void> {
+        try {
+            const org = await this.orgRepo.findOne({ where: { id: orgId } });
+            const result = await this.orgRepo.update(orgId, { active: false });
+            console.log('in delete service');
+            if (result.affected === 0) throw new NotFoundException();
+        } catch (err) {
+            console.error(`Could not delete organization ${orgId}`);
+            throw new InternalServerErrorException('Could not delete organization');
+        }
+    }
 
     async dashboard(orgAdminEmail: string): Promise<OrgDashboardDto> {
         try {
@@ -184,8 +227,8 @@ export class OrgService {
 
             const org = await this.orgRepo.findOne({
                 select: ['id', 'orgName'],
-                where: { orgUser: { id: user.id }, active: true },
-                relations: ['orgUser'], // so TypeORM knows how to traverse the relation
+                where: { orgUsers: { id: user.id }, active: true },
+                relations: ['orgUsers'],
             });
 
             if (!org) {
@@ -202,11 +245,11 @@ export class OrgService {
         }
     }
 
-    private async getTotalCounts(orgId?: number): Promise<OrgDashboardDto['totals']> {
+    private async getTotalCounts(orgId?: string): Promise<OrgDashboardDto['totals']> {
         try {
-            const whereClause = orgId ? { organization: { id: orgId } } : {};
+            const whereClause = orgId ? { organization: { id: orgId }, active: true } : {};
 
-            // Fetch communities (only IDs)
+            // Fetch communities (only IDs) - include community active too
             const communitiesList = await this.commRepo.find({
                 select: ['id'],
                 where: whereClause,
@@ -273,7 +316,7 @@ export class OrgService {
         }
 
         // Group communities by orgId
-        const communitiesByOrg = new Map<number, Community[]>();
+        const communitiesByOrg = new Map<string, Community[]>();
         for (const community of communities) {
             const orgId = community.organization.id;
             if (!communitiesByOrg.has(orgId)) {
@@ -283,7 +326,7 @@ export class OrgService {
         }
 
         // Group landlords by communityId
-        const landlordsByCommunity = new Map<number, number>();
+        const landlordsByCommunity = new Map<string, number>();
         for (const landlord of landlords) {
             const commId = landlord.community.id;
             landlordsByCommunity.set(commId, (landlordsByCommunity.get(commId) || 0) + 1);

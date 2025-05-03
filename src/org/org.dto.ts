@@ -97,7 +97,7 @@ export class UpdateOrgDto extends CreateOrgDto {}
 // }
 
 export interface CommDetailsDto {
-    orgId: number;
+    orgId: string;
     orgName: string;
     commName: string;
     commAdminFirstName: string;
