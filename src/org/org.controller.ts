@@ -102,4 +102,26 @@ export class OrgController {
             message: 'Organization deleted successfully',
         };
     }
+
+    @Get()
+    @UseGuards(AuthGuard)
+    @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
+    async getOrg(@Request() req): Promise<ApiResponse<OrgWithUserDto[]>> {
+        try {
+            const roles = (req.user?.resource_access?.[this.clientId]?.roles as string[]) || [];
+            const email = req.user?.email as string;
+
+            if (!roles.length) {
+                throw new Error('User roles not found in token.');
+            }
+
+            let data: OrgWithUserDto[];
+            data = await this.orgService.getOrg(roles, email);
+            console.log('Get Org Data', data);
+            return { result: true, message: 'Get Org data fetched successfully', data };
+        } catch (error) {
+            console.error('Error fetching Get Org data:', error.message);
+            throw new BadRequestException(error.message || 'Failed to Get Org data.');
+        }
+    }
 }

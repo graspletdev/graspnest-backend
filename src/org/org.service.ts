@@ -379,4 +379,84 @@ export class OrgService {
 
         return result;
     }
+
+    async getOrg(roles: string[], email: string): Promise<OrgWithUserDto[]> {
+        try {
+            const user = await this.userService.findOneByEmail(email);
+            if (!user) throw new NotFoundException(`No user for ${email}`);
+
+            if (roles.includes('OrgAdmin')) {
+                const org = await this.orgRepo.findOne({
+                    where: { orgUsers: { id: user.id }, active: true },
+                    relations: ['orgUsers'],
+                });
+
+                if (!org) {
+                    throw new NotFoundException(`No organization found for user: ${email}`);
+                }
+
+                const adminUser = org.orgUsers.find((u) => u.email === email && u.role === 'OrgAdmin');
+                if (!adminUser) {
+                    throw new NotFoundException(`No OrgAdmin user found for email: ${email}`);
+                }
+
+                return [
+                    {
+                        orgName: org.orgName,
+                        orgType: org.orgType,
+                        address: org.address,
+                        city: org.city,
+                        state: org.state,
+                        country: org.country,
+                        regNum: org.regNum,
+                        vatID: org.vatID,
+                        website: org.website,
+                        logo: org.logo,
+                        docUpload: org.docUpload,
+                        adminFirst: adminUser?.firstName || '',
+                        adminLast: adminUser?.lastName || '',
+                        adminEmail: adminUser?.email || '',
+                        adminContact: adminUser?.contact || '',
+                    },
+                ];
+            }
+
+            if (roles.includes('SuperAdmin')) {
+                const orgs = await this.orgRepo.find({
+                    where: { active: true },
+                    relations: ['orgUsers'],
+                });
+
+                return orgs.map((org) => {
+                    const adminUser = org.orgUsers.find((u) => u.role === 'OrgAdmin');
+                    if (!adminUser) {
+                        throw new NotFoundException(`No OrgAdmin user found for email: ${email}`);
+                    }
+
+                    return {
+                        orgName: org.orgName,
+                        orgType: org.orgType,
+                        address: org.address,
+                        city: org.city,
+                        state: org.state,
+                        country: org.country,
+                        regNum: org.regNum,
+                        vatID: org.vatID,
+                        website: org.website,
+                        logo: org.logo,
+                        docUpload: org.docUpload,
+                        adminFirst: adminUser?.firstName || '',
+                        adminLast: adminUser?.lastName || '',
+                        adminEmail: adminUser?.email || '',
+                        adminContact: adminUser?.contact || '',
+                    };
+                });
+            }
+
+            throw new Error('Unauthorized role.');
+        } catch (error) {
+            console.error('Error fetching Org data:', error.stack || error);
+            throw new InternalServerErrorException('Unable to load Org data');
+        }
+    }
 }

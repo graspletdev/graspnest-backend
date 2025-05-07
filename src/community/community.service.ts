@@ -412,4 +412,16 @@ export class CommunityService {
 
         return result;
     }
+
+    async remove(commId: string): Promise<void> {
+        try {
+            const comm = await this.commRepo.findOne({ where: { id: commId } });
+            const result = await this.commRepo.update(commId, { active: false });
+            console.log('in delete service');
+            if (result.affected === 0) throw new NotFoundException();
+        } catch (err) {
+            console.error(`Could not delete community ${commId}`);
+            throw new InternalServerErrorException('Could not delete community');
+        }
+    }
 }

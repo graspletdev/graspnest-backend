@@ -49,4 +49,17 @@ export class CommunityController {
         console.log('Updated Community ', data);
         return { result: true, message: `Community "${data.commName}" updated`, data };
     }
+
+    @UseGuards(AuthGuard)
+    @Roles({ roles: ['SuperAdmin', 'OrgAdmin', 'CommunityAdmin'] })
+    @Delete(':id')
+    async remove(@Param('id') id: string): Promise<ApiResponse<null>> {
+        console.log(`Deleting Community  with ${id}`);
+        await this.commService.remove(id);
+        return {
+            result: true,
+            data: null,
+            message: 'Organization deleted successfully',
+        };
+    }
 }
