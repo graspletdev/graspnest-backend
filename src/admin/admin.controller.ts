@@ -15,6 +15,7 @@ export class AdminController {
     async dashboard(@Request() req): Promise<ApiResponse<DashboardDto>> {
         //console.log(req)
         const data = await this.adminService.getDashboard();
+        console.log('SuperAdmin Dashboard Data', data);
         return {
             result: true,
             message: 'Dashboard data fetched successfully',

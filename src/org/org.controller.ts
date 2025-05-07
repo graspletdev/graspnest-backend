@@ -24,14 +24,17 @@ import { AuthGuard, RoleGuard, Roles, Public } from 'nest-keycloak-connect';
 @UseGuards(AuthGuard, RoleGuard)
 @Controller('api/org')
 export class OrgController {
-    constructor(private readonly orgService: OrgService) {}
+    private clientId: string;
+    constructor(private readonly orgService: OrgService) {
+        this.clientId = process.env.KEYCLOAK_CLIENT_ID;
+    }
 
     @Get('dashboard')
     @UseGuards(AuthGuard)
     @Roles({ roles: ['SuperAdmin', 'OrgAdmin'] })
     async dashboard(@Request() req): Promise<ApiResponse<OrgDashboardDto>> {
         try {
-            const roles = (req.user?.resource_access?.GraspNestClient?.roles as string[]) || [];
+            const roles = (req.user?.resource_access?.[this.clientId]?.roles as string[]) || [];
             const email = req.user?.email as string;
 
             if (!roles.length) {
@@ -50,7 +53,7 @@ export class OrgController {
             } else {
                 throw new Error('Unauthorized role.');
             }
-
+            console.log('Org Dashbaord Data', data);
             return { result: true, message: 'Dashboard data fetched successfully', data };
         } catch (error) {
             console.error('Error fetching dashboard data:', error.message);

@@ -1,126 +1,90 @@
 import { IsString, IsEmail, IsOptional, Length, IsNumber } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PartialType } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { ValidateNested, IsNotEmpty } from 'class-validator';
+
+export class OrganizationSimpleDto {
+    @IsNotEmpty()
+    id: string;
+}
 
 export class CreateCommDto {
     @ApiProperty({ description: 'Unique Community name' })
     @IsString()
     @Length(3, 50)
-    commName: string;
+    communityName: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    commType?: string;
+    communityType?: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsNumber()
-    blockNum?: number;
+    communityBlocks?: number;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsNumber()
-    unitsinBlock?: number;
+    communityUnitsinBlock?: number;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    commAddress?: string;
+    communityAddress?: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    commCity?: string;
+    communityPostCode?: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    commState?: string;
+    communityCity?: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    commCountry?: string;
+    communityState?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    communityCountry?: string;
 
     @ApiProperty({ description: 'Admin first name' })
     @IsString()
     @Length(1, 30)
-    commAdminFirst: string;
+    communityAdminFirstName: string;
 
     @ApiProperty({ description: 'Admin last name' })
     @IsString()
     @Length(1, 30)
-    commAdminLast: string;
+    communityAdminLastName: string;
 
     @ApiProperty({ description: 'Admin email address' })
     @IsEmail()
-    commAdminEmail: string;
+    communityAdminEmail: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    commAdminContact?: string;
+    communityAdminContact?: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    orgName?: string;
+    communityFeatures?: string;
+
+    @ValidateNested()
+    @Type(() => OrganizationSimpleDto)
+    organization: OrganizationSimpleDto;
 }
 
-export class UpdateCommDto {
-    @IsOptional()
-    @IsString()
-    commName?: string;
-
-    @IsOptional()
-    @IsString()
-    commType?: string;
-
-    @IsOptional()
-    @IsNumber()
-    blockNum?: number;
-
-    @IsOptional()
-    @IsNumber()
-    unitsinBlock?: number;
-
-    @IsOptional()
-    @IsString()
-    commAddress?: string;
-
-    @IsOptional()
-    @IsString()
-    commCity?: string;
-
-    @IsOptional()
-    @IsString()
-    commState?: string;
-
-    @IsOptional()
-    @IsString()
-    commCountry?: string;
-
-    @IsOptional()
-    @IsString()
-    commAdminFirst?: string;
-
-    @IsOptional()
-    @IsString()
-    commAdminLast?: string;
-
-    @IsOptional()
-    @IsEmail()
-    commAdminEmail?: string;
-
-    @IsOptional()
-    @IsString()
-    commAdminContact?: string;
-
-    @IsOptional()
-    @IsString()
-    orgName?: string;
-}
+export class UpdateCommDto extends PartialType(CreateCommDto) {}
 
 // export interface UpdateCommDto {
 // communityName?: string;
@@ -159,20 +123,4 @@ export interface CommDashboardDto {
         blocksCount: number;
     };
     commlandlordDetails: landlordDetailsDto[];
-}
-
-export interface CommWithUserDto {
-    commName: string;
-    commType?: string;
-    blockNum?: number;
-    unitsinBlock?: number;
-    commAddress?: string;
-    commCity?: string;
-    commState?: string;
-    commCountry?: string;
-    commAdminFirst: string;
-    commAdminLast: string;
-    commAdminEmail: string;
-    commAdminContact?: string;
-    orgName: string;
 }

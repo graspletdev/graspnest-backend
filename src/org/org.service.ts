@@ -1,5 +1,5 @@
 // src/org/org.service.ts
-import { Injectable, NotFoundException, ConflictException, InternalServerErrorException, HttpException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, InternalServerErrorException, HttpException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Organization } from './org.entity';
@@ -87,7 +87,12 @@ export class OrgService {
         try {
             const { orgName, adminEmail, adminFirst, adminLast, adminContact, ...orgFields } = dto;
 
-            if (await this.orgRepo.findOne({ where: { orgName, active: true } })) {
+            if (!orgName || !adminEmail || !adminFirst || !adminLast) {
+                throw new BadRequestException('Missing required fields for organization creation');
+            }
+
+            const existingOrg = await this.orgRepo.findOne({ where: { orgName, active: true } });
+            if (existingOrg) {
                 console.error(`Organization "${orgName}" already exists`);
                 throw new ConflictException(`Organization "${orgName}" already exists`);
             }
@@ -114,9 +119,10 @@ export class OrgService {
                 throw new InternalServerErrorException('Registration succeeded but no user ID was returned');
             }
 
-            const adminUser = await this.userRepo.findOne({
-                where: { username: newUserName },
-            });
+            //             const adminUser = await this.userRepo.findOne({
+            //                 where: { username: newUserName },
+            //             });
+            const adminUser = await this.userService.findOneByEmail(newUserName);
             if (!adminUser) {
                 console.error('Admin user was created in Keycloak but not found in local database');
                 throw new InternalServerErrorException('Admin user was created in Keycloak but not found in local database');
@@ -163,8 +169,10 @@ export class OrgService {
                 throw new NotFoundException(`Admin user with email "${adminEmail}" not found in organization`);
             }
 
-            // Update organization fields
-            await orgRepo.update(orgId, orgFields);
+            // Update org - explicitly list updatable fields
+            await orgRepo.update(orgId, {
+                ...orgFields,
+            });
 
             // Update admin user fields
             await userRepo.update(currentUser.id, {
@@ -256,6 +264,7 @@ export class OrgService {
             });
 
             const communityIds = communitiesList.map((c) => c.id);
+            const communitiesCount = communitiesList.length;
 
             let landlordsCount = 0;
 
@@ -268,8 +277,6 @@ export class OrgService {
                     },
                 });
             }
-
-            const communitiesCount = await this.commRepo.count({ where: whereClause });
 
             const tenantsCount = 0; // placeholder for now
 
@@ -298,7 +305,7 @@ export class OrgService {
             where: {
                 organization: { id: In(orgIds) },
             },
-            relations: ['organization'], // Optional, if we need extra org data
+            relations: ['organization', 'communityUsers'], // Optional, if we need extra org data
         });
 
         // Fetch all landlords for these communities
@@ -339,13 +346,16 @@ export class OrgService {
             if (orgCommunities.length > 0) {
                 for (const comm of orgCommunities) {
                     const landlordsCount = landlordsByCommunity.get(comm.id) || 0;
+                    // Find CommunityAdmin
+                    const commAdmin = comm.communityUsers?.find((u) => u.role === 'CommunityAdmin');
 
                     result.push({
                         orgId: org.id,
                         orgName: org.orgName,
-                        commName: comm.communityName,
-                        commAdminFirstName: comm.communityAdminFirstName,
-                        commAdminLastName: comm.communityAdminLastName,
+                        commId: comm.id,
+                        commName: comm.commName,
+                        commAdminFirstName: commAdmin?.firstName || '',
+                        commAdminLastName: commAdmin?.lastName || '',
                         communitiesCount: orgCommunities.length,
                         landlordsCount: landlordsCount,
                         tenantsCount: 0, // Can add similar logic for tenants

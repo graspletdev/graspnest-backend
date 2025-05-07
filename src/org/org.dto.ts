@@ -99,6 +99,7 @@ export class UpdateOrgDto extends CreateOrgDto {}
 export interface CommDetailsDto {
     orgId: string;
     orgName: string;
+    commId: string;
     commName: string;
     commAdminFirstName: string;
     commAdminLastName: string;
@@ -116,4 +117,20 @@ export interface OrgDashboardDto {
     orgCommDetails: CommDetailsDto[];
 }
 
-export interface OrgWithUserDto extends CreateOrgDto {}
+export interface OrgWithUserDto {
+    orgName: string;
+    orgType?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    regNum?: string;
+    vatID?: string;
+    website?: string;
+    adminFirst: string;
+    adminLast: string;
+    adminEmail: string;
+    adminContact?: string;
+    logo?: string;
+    docUpload?: string;
+}

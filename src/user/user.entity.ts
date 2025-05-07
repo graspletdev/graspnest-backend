@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToOne, ManyToOne } from 'typeorm';
 import { Organization } from 'src/org/org.entity';
+import { Community } from 'src/community/community.entity';
 
 @Entity()
 export class User {
@@ -29,4 +30,7 @@ export class User {
 
     @ManyToOne(() => Organization, (org) => org.orgUsers)
     organization: Organization;
+
+    @ManyToOne(() => Community, (community) => community.communityUsers)
+    community: Community;
 }

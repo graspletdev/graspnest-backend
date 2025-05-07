@@ -1,61 +1,53 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import { Organization } from 'src/org/org.entity';
 import { Landlord } from 'src/landlord/landlord.entity';
+import { User } from 'src/user/user.entity';
 
 @Entity()
 export class Community {
-    @PrimaryGeneratedColumn("uuid")
+    @PrimaryGeneratedColumn('uuid')
     id: string;
 
     @Column()
-    communityName: string;
+    commName: string;
 
     @Column()
-    communityType: string;
+    commType: string;
 
     @Column()
-    communityBlocks: number;
+    blockNum: number;
 
     @Column()
-    communityUnitsinBlock: number;
+    unitsinBlock: number;
 
     @Column({
         type: 'varchar',
         length: 255,
     })
-    communityAddress: string;
+    commAddress: string;
 
     @Column()
-    communityPostCode: string;
+    commCity: string;
 
     @Column()
-    communityCity: string;
+    commState: string;
 
     @Column()
-    communityState: string;
+    commCountry: string;
 
-    @Column()
-    communityCountry: string;
+    @Column({ default: true })
+    active: boolean;
 
-    @Column()
-    communityAdminFirstName: string;
+    //     @Column()
+    //     orgId: string;
 
-    @Column()
-    communityAdminLastName: string;
+    // One Community can have many users
+    @OneToMany(() => User, (user) => user.community, { cascade: true })
+    communityUsers: User[];
 
-    @Column()
-    communityAdminEmail: string;
-
-    @Column()
-    communityAdminContact: string;
-
-    @Column({
-        type: 'varchar',
-        length: 255,
-    })
-    communityFeatures: string;
-
+    // One Organization can have many communities
     @ManyToOne(() => Organization, (org) => org.communities)
+    @JoinColumn({ name: 'organizationId' })
     organization: Organization;
 
     // one Community has many Landlords

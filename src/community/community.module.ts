@@ -8,16 +8,19 @@ import { Landlord } from 'src/landlord/landlord.entity';
 import { Organization } from 'src/org/org.entity';
 import { User } from 'src/user/user.entity';
 import { UserService } from 'src/user/user.service';
+import { AuthService } from 'src/auth/auth.service';
 
 @Module({
     // added Global to keycloakmodule
     // imports: [TypeOrmModule.forFeature([Organization]),KeycloakModule],
-    imports: [TypeOrmModule.forFeature([Organization]),
-              TypeOrmModule.forFeature([Community]),
-               TypeOrmModule.forFeature([User]),
-               TypeOrmModule.forFeature([Landlord])],
+    imports: [
+        TypeOrmModule.forFeature([Organization]),
+        TypeOrmModule.forFeature([Community]),
+        TypeOrmModule.forFeature([User]),
+        TypeOrmModule.forFeature([Landlord]),
+    ],
     controllers: [CommunityController],
-    providers: [CommunityService,UserService],
+    providers: [CommunityService, UserService, AuthService],
     exports: [CommunityService],
 })
 export class CommunityModule {

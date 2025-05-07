@@ -67,22 +67,18 @@ export class AdminService {
             // in your OrgService (or wherever you need this)
             const rawData = await this.orgRepo
                 .createQueryBuilder('org')
-                // join the one-to-one User relation
-                .leftJoin('org.orgUsers', 'admin')
-                // join communities & landlords
+                .leftJoin('org.orgUsers', 'admin', 'admin.role = :adminRole', { adminRole: 'OrgAdmin' })
                 .leftJoin('org.communities', 'comm')
                 .leftJoin('comm.landlords', 'landlord')
                 .where('org.active = :active', { active: true })
                 .select('org.id', 'orgId')
                 .addSelect('org.orgName', 'orgName')
-                // now select the admin’s fields from the user table
                 .addSelect('admin.firstName', 'orgAdminFirstName')
                 .addSelect('admin.lastName', 'orgAdminLastName')
                 .addSelect('COUNT(DISTINCT comm.id)', 'communitiesCount')
                 .addSelect('COUNT(DISTINCT landlord.id)', 'landlordsCount')
                 .groupBy('org.id')
                 .addGroupBy('org.orgName')
-                // and group by your joined fields
                 .addGroupBy('admin.firstName')
                 .addGroupBy('admin.lastName')
                 .getRawMany();
